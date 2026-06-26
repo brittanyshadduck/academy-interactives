@@ -183,7 +183,10 @@ function scaleApp() {
   const app = document.getElementById('app');
   const scale = Math.min(1, window.innerWidth / 980);
   app.style.transform = 'scale(' + scale + ')';
-  app.style.transformOrigin = 'center center';
+  app.style.transformOrigin = 'top center';
+  const scaledHeight = Math.ceil(620 * scale);
+  document.documentElement.style.height = scaledHeight + 'px';
+  document.body.style.height = scaledHeight + 'px';
 }
 window.addEventListener('resize', scaleApp);
 
