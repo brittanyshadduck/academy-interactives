@@ -515,7 +515,11 @@ function scaleModal() {
   const modal = document.getElementById('modal');
   const scale = Math.min(1, window.innerWidth / 1060);
   modal.style.transform = 'scale(' + scale + ')';
-  modal.style.transformOrigin = 'center center';
+  modal.style.transformOrigin = 'top center';
+  // Collapse the page to the scaled modal height so there is no whitespace
+  const scaledHeight = Math.ceil(684 * scale);
+  document.documentElement.style.height = scaledHeight + 'px';
+  document.body.style.height = scaledHeight + 'px';
 }
 window.addEventListener('resize', scaleModal);
 scaleModal();
