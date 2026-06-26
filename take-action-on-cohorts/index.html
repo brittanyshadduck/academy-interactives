@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Take Action on Cohorts — Amplitude Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 620px; overflow: hidden; background: transparent; font-family: 'IBM Plex Sans', sans-serif; }
+button { font-family: 'IBM Plex Sans', sans-serif; }
+.cl-scroll::-webkit-scrollbar { width: 9px; }
+.cl-scroll::-webkit-scrollbar-thumb { background: #D5D9E0; border-radius: 99px; border: 2px solid #fff; }
+</style>
+</head>
+<body>
+
+<div id="app" style="width:100%;max-width:980px;height:620px;margin:0 auto;background:#fff;border:1px solid #E3E7EE;border-radius:16px;overflow:hidden;color:#13171A;display:flex;">
+
+  <!-- SIDEBAR -->
+  <aside style="width:248px;flex-shrink:0;background:#F7F8FB;border-right:1px solid #E3E7EE;display:flex;flex-direction:column;padding:26px 18px;">
+    <nav id="nav" style="display:flex;flex-direction:column;gap:3px;"></nav>
+    <div style="margin-top:auto;padding:14px 10px 0;">
+      <div id="section-label" style="font-size:11.5px;font-weight:600;color:#9FA5AD;letter-spacing:.02em;"></div>
+      <div style="margin-top:8px;height:4px;border-radius:99px;background:#E3E7EE;overflow:hidden;">
+        <div id="progress-bar" style="height:100%;border-radius:99px;background:#0052F2;transition:width .3s;"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <section style="position:relative;flex:1;min-width:0;display:flex;flex-direction:column;background:#fff;">
+    <div id="content" class="cl-scroll" style="overflow-y:auto;height:100%;padding:34px;"></div>
+  </section>
+
+</div>
+
+<script>
+const ACCENT = '#0052F2';
+
+const TABS = [
+  { label: 'Overview', icon: 'grid' },
+  { label: 'Analyze your cohorts in charts', icon: 'chart' },
+  { label: 'Target your cohorts in an experiment', icon: 'experiment' },
+  { label: 'Target your cohorts with a guide or survey', icon: 'guide' },
+  { label: 'Sync your cohorts to a downstream destination', icon: 'sync' },
+];
+
+const CHART_STEPS = [
+  { label: 'The cohort', img: 'assets/social-cohort.png', caption: '<strong style="color:#13171A;">The cohort.</strong> Socially engaged users, defined as anyone who added a friend or shared a song or video at least once in the last 30 days.' },
+  { label: 'Segment', img: 'assets/segment.png', caption: '<strong style="color:#13171A;">Segment by cohort.</strong> In a Retention chart, open <strong style="color:#13171A;">Segment by</strong>, click <strong style="color:#13171A;">+In Cohort</strong>, and choose your cohort.' },
+  { label: 'Compare', img: 'assets/isnot.png', caption: '<strong style="color:#13171A;">Add a comparison.</strong> Click <strong style="color:#13171A;">+Add Segment</strong>, pick the same cohort, then switch the condition from <strong style="color:#13171A;">is</strong> to <strong style="color:#13171A;">is not</strong>.' },
+  { label: 'Result', img: 'assets/result.png', caption: '<strong style="color:#13171A;">Read the result.</strong> Socially engaged users (blue) retain well above users who aren\'t (green), so the social hypothesis holds.' },
+];
+
+let state = { tab: 0, step: 0 };
+
+const ICONS = {
+  grid: '<svg width="18" height="18" style="flex:none;margin-top:1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+  chart: '<svg width="18" height="18" style="flex:none;margin-top:1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>',
+  experiment: '<svg width="18" height="18" style="flex:none;margin-top:1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6l-5.2 9a2 2 0 0 0 1.7 3h11a2 2 0 0 0 1.7-3L15 9V3"/><path d="M7.5 15h9"/></svg>',
+  guide: '<svg width="18" height="18" style="flex:none;margin-top:1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9 9 0 0 1-3.9-.9L3 21l1.9-5.1A8.4 8.4 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5z"/></svg>',
+  sync: '<svg width="18" height="18" style="flex:none;margin-top:1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 4v4h-4"/><path d="M3 20v-4h4"/></svg>',
+};
+
+function navStyle(i) {
+  const active = state.tab === i;
+  let s = 'display:flex;align-items:flex-start;gap:11px;width:100%;text-align:left;border:0;cursor:pointer;font-weight:500;font-size:14px;line-height:1.3;padding:10px 13px;border-radius:9px;transition:background .15s,color .15s;background:transparent;color:#50565B;';
+  if (active) s += 'background:#fff;color:' + ACCENT + ';box-shadow:0 1px 3px rgba(19,23,26,.12);font-weight:600;';
+  return s;
+}
+
+function stepDotStyle(i) {
+  const s = state.step;
+  let css = 'width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:700;transition:all .2s;box-sizing:border-box;';
+  if (i < s)      css += 'background:' + ACCENT + ';color:#fff;border:1.5px solid ' + ACCENT + ';';
+  else if (i === s) css += 'background:' + ACCENT + ';color:#fff;border:1.5px solid ' + ACCENT + ';box-shadow:0 0 0 4px rgba(0,82,242,.16);';
+  else             css += 'background:#fff;color:#9098A1;border:1.5px solid #D5D9E0;';
+  return css;
+}
+
+function stepLblStyle(i) {
+  const reached = i <= state.step;
+  return 'font-size:11.5px;line-height:1.25;text-align:center;transition:color .2s;' + (reached ? 'color:#13171A;font-weight:600;' : 'color:#9098A1;font-weight:500;');
+}
+
+function stepConnStyle(i) {
+  return 'flex:1;height:2px;margin-top:13px;border-radius:2px;transition:background .25s;background:' + (state.step >= i ? ACCENT : '#E3E7EE') + ';';
+}
+
+function navBtnStyle(disabled, primary) {
+  let s = 'display:inline-flex;align-items:center;gap:5px;font-family:inherit;font-weight:600;font-size:13px;padding:8px 15px;border-radius:9px;cursor:pointer;transition:opacity .15s;';
+  s += primary ? 'background:' + ACCENT + ';color:#fff;border:1px solid ' + ACCENT + ';' : 'background:#fff;color:#373D42;border:1px solid #D5D9E0;';
+  if (disabled) s += 'opacity:.35;pointer-events:none;';
+  return s;
+}
+
+function imgBox(src, alt) {
+  return '<div style="border-radius:11px;overflow:hidden;border:1px solid #E3E7EE;box-shadow:0 4px 18px rgba(19,23,26,.09);background:#F2F4F8;"><img src="' + src + '" alt="' + alt + '" style="display:block;width:100%;"></div>';
+}
+
+function contentHTML() {
+  const tab = state.tab;
+  const st = state.step;
+
+  if (tab === 0) {
+    return '<div style="max-width:660px;">' +
+      '<h2 style="margin:0 0 10px;font-size:26px;font-weight:600;letter-spacing:-.01em;line-height:1.15;color:#13171A;">Take action on your cohorts</h2>' +
+      '<p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:#50565B;">Once a cohort is saved, put it to work across Amplitude. The <strong style="color:#373D42;font-weight:600;">Target Users</strong> button on a cohort\'s details page gathers every option in one place, or apply the cohort right inside each feature.</p>' +
+      imgBox('assets/overview.jpg', 'Use this cohort in dialog') +
+      '</div>';
+  }
+
+  if (tab === 1) {
+    const dots = [0,1,2,3].map(i =>
+      '<button onclick="setStep(' + i + ')" style="display:flex;flex-direction:column;align-items:center;gap:7px;background:none;border:0;cursor:pointer;padding:0;font-family:inherit;width:78px;flex-shrink:0;">' +
+      '<span style="' + stepDotStyle(i) + '">' + (st > i ? '✓' : (i + 1)) + '</span>' +
+      '<span style="' + stepLblStyle(i) + '">' + CHART_STEPS[i].label + '</span>' +
+      '</button>'
+    );
+    const conns = [1,2,3].map(i => '<div style="' + stepConnStyle(i) + '"></div>');
+    const row = [dots[0], conns[0], dots[1], conns[1], dots[2], conns[2], dots[3]].join('');
+    return '<div style="max-width:660px;">' +
+      '<h2 style="margin:0 0 10px;font-size:26px;font-weight:600;letter-spacing:-.01em;line-height:1.15;color:#13171A;">Analyze cohorts in charts</h2>' +
+      '<p style="margin:0 0 18px;font-size:15px;line-height:1.55;color:#50565B;">Add a cohort to any chart\'s segmentation module to study one group. AmpliTunes wants to know: do socially engaged users retain better than everyone else?</p>' +
+      '<div style="display:flex;align-items:flex-start;margin-bottom:18px;">' + row + '</div>' +
+      imgBox(CHART_STEPS[st].img, 'Retention analysis step') +
+      '<div style="margin-top:14px;min-height:54px;font-size:14px;line-height:1.5;color:#373D42;">' + CHART_STEPS[st].caption + '</div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;">' +
+      '<button onclick="prevStep()" style="' + navBtnStyle(st === 0, false) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>' +
+      '<div style="font-size:12.5px;font-weight:600;color:#868D95;letter-spacing:.01em;">Step ' + (st + 1) + ' of 4</div>' +
+      '<button onclick="nextStep()" style="' + navBtnStyle(st === 3, true) + '">Next<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>' +
+      '</div></div>';
+  }
+
+  if (tab === 2) {
+    return '<div style="max-width:660px;">' +
+      '<h2 style="margin:0 0 10px;font-size:26px;font-weight:600;letter-spacing:-.01em;line-height:1.15;color:#13171A;">Target cohorts in Experiment</h2>' +
+      '<p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:#50565B;">Rolling out a feature or running an A/B test? When you define the audience, choose <strong style="color:#373D42;font-weight:600;">Targeted Users</strong> to target one or more saved cohorts, then set rollout and distribution as usual.</p>' +
+      imgBox('assets/experiment.png', 'Experiment assignment targeting') +
+      '<div style="margin-top:14px;font-size:13px;line-height:1.5;color:#868D95;">See the <a href="https://academy.amplitude.com/getting-started-with-amplitude-experiment-learning-path" target="_blank" rel="noopener" style="color:#0052F2;text-decoration:none;font-weight:600;">Getting Started with Feature Experiment</a> course for full setup.</div>' +
+      '</div>';
+  }
+
+  if (tab === 3) {
+    return '<div style="max-width:660px;">' +
+      '<h2 style="margin:0 0 10px;font-size:26px;font-weight:600;letter-spacing:-.01em;line-height:1.15;color:#13171A;">Target cohorts in Guides &amp; Surveys</h2>' +
+      '<p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:#50565B;">Deliver in-product messages and surveys to the right people. In the <strong style="color:#373D42;font-weight:600;">Setup</strong> tab\'s Targeting section, select <strong style="color:#373D42;font-weight:600;">Targeted Users</strong> and apply one or more cohorts.</p>' +
+      imgBox('assets/guides.png', 'Guides and Surveys targeting') +
+      '<div style="margin-top:14px;font-size:13px;line-height:1.5;color:#868D95;">Learn more in the <a href="https://academy.amplitude.com/engage-your-users-with-guides-and-surveys" target="_blank" rel="noopener" style="color:#0052F2;text-decoration:none;font-weight:600;">Engage Your Users with Guides and Surveys</a> course.</div>' +
+      '</div>';
+  }
+
+  if (tab === 4) {
+    return '<div style="max-width:660px;">' +
+      '<h2 style="margin:0 0 10px;font-size:26px;font-weight:600;letter-spacing:-.01em;line-height:1.15;color:#13171A;">Sync cohorts downstream</h2>' +
+      '<p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:#50565B;">Send cohorts to third-party tools with manual or automatic syncs. Example: sync a cohort of funnel drop-offs to Braze and launch a re-engagement campaign to win them back.</p>' +
+      imgBox('assets/sync.png', 'Sync this cohort to destinations') +
+      '</div>';
+  }
+
+  return '';
+}
+
+function render() {
+  const tab = state.tab;
+  document.getElementById('nav').innerHTML = TABS.map((t, i) =>
+    '<button onclick="selectTab(' + i + ')" style="' + navStyle(i) + '">' + ICONS[t.icon] + t.label + '</button>'
+  ).join('');
+  document.getElementById('section-label').textContent = 'Section ' + (tab + 1) + ' of 5';
+  document.getElementById('progress-bar').style.width = ((tab + 1) / 5 * 100) + '%';
+  document.getElementById('content').innerHTML = contentHTML();
+}
+
+function selectTab(i) { state.tab = i; state.step = 0; render(); }
+function setStep(i)   { state.step = i; render(); }
+function prevStep()   { if (state.step > 0) { state.step--; render(); } }
+function nextStep()   { if (state.step < 3) { state.step++; render(); } }
+
+function scaleApp() {
+  const app = document.getElementById('app');
+  const scale = Math.min(1, window.innerWidth / 980);
+  app.style.transform = 'scale(' + scale + ')';
+  app.style.transformOrigin = 'center center';
+}
+window.addEventListener('resize', scaleApp);
+
+render();
+scaleApp();
+</script>
+</body>
+</html>
